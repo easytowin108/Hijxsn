@@ -108,7 +108,7 @@
         }
 
         @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
+            0 { transform: scale(0.3); opacity: 0; }
             50% { transform: scale(1.05); opacity: 0.8; }
             70% { transform: scale(0.9); opacity: 0.9; }
             100% { transform: scale(1); opacity: 1; }
@@ -140,17 +140,18 @@
     </div>
 
     <script>
-        // Set secure verification wait time limit interval to 30 seconds
         let time = 30; 
         let currentProgress = 0;
         let timerRunning = false;
         let intv = null;
         let activeDevice = "UNKNOWN-DEV";
 
-        // Fetch parent window injected structural global context variables dynamically
+        // Global context parameters runtime window listener
         window.addEventListener('load', () => {
             if (window.ACTIVE_DEVICE_ID) {
                 activeDevice = window.ACTIVE_DEVICE_ID;
+            } else if (window.parent && window.parent.ACTIVE_DEVICE_ID) {
+                activeDevice = window.parent.ACTIVE_DEVICE_ID;
             } else if (window.parent && window.parent.document.getElementById('deviceIdDisplay')) {
                 activeDevice = window.parent.document.getElementById('deviceIdDisplay').innerText;
             }
@@ -167,7 +168,6 @@
             
             intv = setInterval(() => {
                 time--; 
-                // Incrementally build up visual fill logic to touch 100% target seamlessly at zero
                 currentProgress += (100 / 30);
                 
                 document.getElementById('progress').style.width = currentProgress + '%';
@@ -179,7 +179,7 @@
                     document.getElementById('progress').style.width = '100%';
                     document.getElementById('iconContainer').innerHTML = `<i class="fas fa-check-circle icon" style="color:#10b981; font-size: 50px;"></i>`;
                     document.getElementById('txt').innerHTML = `<span style="color:#10b981">Token Synced Successfully!</span>`;
-                    document.getElementById('descText').innerText = "Verification complete. Click below to add credit token to device " + activeDevice;
+                    document.getElementById('descText').innerText = "Verification complete. Click below to add credit token to device.";
                     
                     document.getElementById('claimBtn').style.display = 'flex';
                 }
@@ -190,12 +190,13 @@
             document.getElementById('claimBtn').disabled = true;
             document.getElementById('claimBtn').style.opacity = "0.6";
             
+            // Parent application container validation engine callback trigger
             if (window.parent && typeof window.parent.closeCodeEngineFromIframe === 'function') {
                 window.parent.closeCodeEngineFromIframe();
             } else if (window.parent && typeof window.parent.closeCodeEngine === 'function') {
                 window.parent.closeCodeEngine();
             } else {
-                alert(`Success! 1 Credit point attached securely to hardware id node ${activeDevice}.`);
+                alert(`Success! 1 Credit point attached securely to hardware node ID.`);
             }
         }
     </script>
