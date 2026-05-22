@@ -97,7 +97,8 @@
             border-radius: 6px;
             font-size: 11px;
             font-family: monospace;
-            color: #64748b;
+            color: #4f46e5;
+            border: 1px solid rgba(99, 102, 241, 0.2);
             margin-top: 15px;
             display: inline-block;
         }
@@ -108,7 +109,7 @@
         }
 
         @keyframes bounceIn {
-            0 { transform: scale(0.3); opacity: 0; }
+            0% { transform: scale(0.3); opacity: 0; }
             50% { transform: scale(1.05); opacity: 0.8; }
             70% { transform: scale(0.9); opacity: 0.9; }
             100% { transform: scale(1); opacity: 1; }
@@ -140,21 +141,40 @@
     </div>
 
     <script>
-        let time = 30; 
+        let time = 1; 
         let currentProgress = 0;
         let timerRunning = false;
         let intv = null;
         let activeDevice = "UNKNOWN-DEV";
 
-        // Global context parameters runtime window listener
+        // --- 100% SAME HARDWARE SPEC FINGERPRINT GENERATOR ---
+        // Yeh dashboard wale rules se exact match karega chahe link se khule ya iframe se
+        function getLocalHardwareIdentity() {
+            if(localStorage.getItem('device_fingerprint_id')) {
+                return localStorage.getItem('device_fingerprint_id');
+            }
+            const userAgentString = window.navigator.userAgent.replace(/[^a-zA-Z]/g, '').slice(0, 5);
+            const physicalScreenDimensions = window.screen.height * window.screen.width;
+            const cryptRandomSalt = Math.floor(Math.random() * 899999 + 100000);
+            const cleanDerivedId = `${userAgentString}-${physicalScreenDimensions}-${cryptRandomSalt}`.toUpperCase();
+            localStorage.setItem('device_fingerprint_id', cleanDerivedId);
+            return cleanDerivedId;
+        }
+
+        // Hybrid Device Tracking Detector Channel
         window.addEventListener('load', () => {
+            // 1. Check if Parent Context exists (Loaded Inside Main Dashboard App Frame)
             if (window.ACTIVE_DEVICE_ID) {
                 activeDevice = window.ACTIVE_DEVICE_ID;
             } else if (window.parent && window.parent.ACTIVE_DEVICE_ID) {
                 activeDevice = window.parent.ACTIVE_DEVICE_ID;
             } else if (window.parent && window.parent.document.getElementById('deviceIdDisplay')) {
                 activeDevice = window.parent.document.getElementById('deviceIdDisplay').innerText;
+            } else {
+                // 2. Fallback Mode: (Opened Directly via Standalone Web Link Location)
+                activeDevice = getLocalHardwareIdentity();
             }
+            
             document.getElementById('detectedIdBox').innerText = "DEVICE: " + activeDevice;
         });
 
@@ -168,7 +188,7 @@
             
             intv = setInterval(() => {
                 time--; 
-                currentProgress += (100 / 30);
+                currentProgress += (10000 / 3);
                 
                 document.getElementById('progress').style.width = currentProgress + '%';
                 document.getElementById('txt').innerHTML = `Processing Secure Core... ${time}s`;
@@ -190,13 +210,14 @@
             document.getElementById('claimBtn').disabled = true;
             document.getElementById('claimBtn').style.opacity = "0.6";
             
-            // Parent application container validation engine callback trigger
+            // Check context loops for automatic credit redirection dispatch
             if (window.parent && typeof window.parent.closeCodeEngineFromIframe === 'function') {
                 window.parent.closeCodeEngineFromIframe();
             } else if (window.parent && typeof window.parent.closeCodeEngine === 'function') {
                 window.parent.closeCodeEngine();
             } else {
-                alert(`Success! 1 Credit point attached securely to hardware node ID.`);
+                // Agar direct link se khula hai toh alert dega ki data terminal system synced hai
+                alert(`Success! 1 Credit point attached securely to device profile:\n${activeDevice}`);
             }
         }
     </script>
